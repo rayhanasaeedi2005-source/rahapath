@@ -24,8 +24,9 @@ with tab1:
             st.warning("Please type a question first! (لطفاً اول یک سوال بنویسید)")
         if question.strip() != "":
             with st.spinner("Thinking... (در حال پاسخ‌گویی...)"):
+                answered = False
                 try:
-                    api_key = st.secrets["OPENROUTER_API_KEY"]
+                    api_key = st.secrets["OPENROUTER_API_KEY"].strip()
                     headers = {
                         "Authorization": f"Bearer {api_key}",
                         "Content-Type": "application/json",
@@ -33,31 +34,30 @@ with tab1:
                         "X-Title": "RahaPath"
                     }
                     models = [
+                        "openrouter/free",
                         "meta-llama/llama-3.3-70b-instruct:free",
-                        "google/gemma-3-27b-it:free",
-                        "mistralai/mistral-small-3.1-24b-instruct:free"
+                        "google/gemma-3-27b-it:free"
                     ]
-                    answered = False
                     for model_name in models:
                         data = {
                             "model": model_name,
                             "messages": [
-                                {"role": "system", "content": "You are RahaPath AI, a helpful and encouraging educational assistant for Afghan students. Answer clearly, accurately, and thoroughly in the same language the user asks."},
+                                {"role": "system", "content": "You are RahaPath AI, a helpful educational assistant for Afghan students. Answer clearly, accurately, and thoroughly in the same language the user asks."},
                                 {"role": "user", "content": question}
                             ]
                         }
-                        response = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=30)
+                        response = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=25)
                         if response.status_code == 200 and response.text.strip() != "":
                             result = response.json()
                             if "choices" in result and len(result["choices"]) > 0:
-                                answer = result["choices"]["message"]["content"]
+                                answer = result["choices"][0]["message"]["content"]
                                 st.success(answer)
                                 answered = True
                                 break
-                    if not answered:
-                        st.warning("AI servers are very busy right now. Please wait 5 seconds and click 'Ask AI' again!")
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                except Exception:
+                    pass
+                if not answered:
+                    st.info("💡 **RahaPath Smart Guide:**\n\nسرورهای رایگان هوش مصنوعی در این لحظه شلوغ هستند (دوباره دکمه Ask AI را بزنید)، اما این راهنمای سریع برای شماست:\n- **یادگیری انگلیسی:** روزانه ۱۰ لغت جدید در جمله یاد بگیرید، ۱۵ دقیقه پادکست انگلیسی گوش دهید و جملات را بلند تکرار کنید.\n- **برنامه‌ریزی درسی:** از روش پومودورو (۲۵ دقیقه مطالعه متمرکز + ۵ دقیقه استراحت) استفاده کنید.\n- **کدنویسی و بورسیه:** روی معدل بالا، زبان انگلیسی (Duolingo) و تمرین روزانه پایتون تمرکز کنید!")
 
 with tab2:
     st.header("🌍 Scholarship Finder")
