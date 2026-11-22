@@ -49,13 +49,15 @@ with tab1:
                         response = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=25)
                         if response.status_code == 200 and response.text.strip() != "":
                             result = response.json()
-                            if "choices" in result and len(result["choices"]) > 0:
-                                answer = result["choices"][0]["message"]["content"]
+                            choices_list = result.get("choices", [])
+                            if len(choices_list) > 0:
+                                first_choice = choices_list[0]
+                                answer = first_choice["message"]["content"]
                                 st.success(answer)
                                 answered = True
                                 break
-                except Exception:
-                    pass
+                except Exception as e:
+                    st.error(f"Debug info: {e}")
                 if not answered:
                     st.info("💡 **RahaPath Smart Guide:**\n\nسرورهای رایگان هوش مصنوعی در این لحظه شلوغ هستند (دوباره دکمه Ask AI را بزنید)، اما این راهنمای سریع برای شماست:\n- **یادگیری انگلیسی:** روزانه ۱۰ لغت جدید در جمله یاد بگیرید، ۱۵ دقیقه پادکست انگلیسی گوش دهید و جملات را بلند تکرار کنید.\n- **برنامه‌ریزی درسی:** از روش پومودورو (۲۵ دقیقه مطالعه متمرکز + ۵ دقیقه استراحت) استفاده کنید.\n- **کدنویسی و بورسیه:** روی معدل بالا، زبان انگلیسی (Duolingo) و تمرین روزانه پایتون تمرکز کنید!")
 
