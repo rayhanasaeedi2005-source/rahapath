@@ -25,20 +25,24 @@ with tab1:
         if question.strip() != "":
             with st.spinner("Thinking... (در حال پاسخ‌گویی...)"):
                 answered = False
-                try:
-                    api_key = st.secrets["OPENROUTER_API_KEY"].strip()
-                    headers = {
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json",
-                        "HTTP-Referer": "https://streamlit.app",
-                        "X-Title": "RahaPath"
-                    }
-                    models = [
-                        "openrouter/free",
-                        "meta-llama/llama-3.3-70b-instruct:free",
-                        "google/gemma-3-27b-it:free"
-                    ]
-                    for model_name in models:
+                api_key = st.secrets.get("OPENROUTER_API_KEY", "").strip()
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://streamlit.app",
+                    "X-Title": "RahaPath"
+                }
+                models = [
+                    "meta-llama/llama-3.3-70b-instruct:free",
+                    "google/gemma-3-27b-it:free",
+                    "mistralai/mistral-small-3.1-24b-instruct:free",
+                    "nvidia/nemotron-nano-9b-v2:free",
+                    "openrouter/free"
+                ]
+                for model_name in models:
+                    if answered:
+                        break
+                    try:
                         data = {
                             "model": model_name,
                             "messages": [
@@ -46,20 +50,19 @@ with tab1:
                                 {"role": "user", "content": question}
                             ]
                         }
-                        response = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=25)
-                        if response.status_code == 200 and response.text.strip() != "":
+                        response = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=20)
+                        if response.status_code == 200:
                             result = response.json()
-                            choices_list = result.get("choices", [])
-                            if len(choices_list) > 0:
-                                first_choice = choices_list[0]
-                                answer = first_choice["message"]["content"]
-                                st.success(answer)
-                                answered = True
-                                break
-                except Exception as e:
-                    st.error(f"Debug info: {e}")
+                            for item in result.get("choices", []):
+                                text = item.get("message", {}).get("content", "").strip()
+                                if text != "":
+                                    st.success(text)
+                                    answered = True
+                                    break
+                    except Exception:
+                        continue
                 if not answered:
-                    st.info("💡 **RahaPath Smart Guide:**\n\nسرورهای رایگان هوش مصنوعی در این لحظه شلوغ هستند (دوباره دکمه Ask AI را بزنید)، اما این راهنمای سریع برای شماست:\n- **یادگیری انگلیسی:** روزانه ۱۰ لغت جدید در جمله یاد بگیرید، ۱۵ دقیقه پادکست انگلیسی گوش دهید و جملات را بلند تکرار کنید.\n- **برنامه‌ریزی درسی:** از روش پومودورو (۲۵ دقیقه مطالعه متمرکز + ۵ دقیقه استراحت) استفاده کنید.\n- **کدنویسی و بورسیه:** روی معدل بالا، زبان انگلیسی (Duolingo) و تمرین روزانه پایتون تمرکز کنید!")
+                    st.warning("سرورهای رایگان در این لحظه بسیار شلوغ هستند. لطفاً ۵ ثانیه صبر کنید و دوباره دکمه Ask AI را بزنید.")
 
 with tab2:
     st.header("🌍 Scholarship Finder")
