@@ -23,7 +23,7 @@ with tab1:
         if question.strip() == "":
             st.warning("Please type a question first! (لطفاً اول یک سوال بنویسید)")
         if question.strip() != "":
-            with st.spinner("Thinking... (در حال پاسخ‌گویی...)"):
+            with st.spinner("Thinking... (در حال دریافت پاسخ از هوش مصنوعی...)"):
                 answered = False
                 api_key = st.secrets.get("OPENROUTER_API_KEY", "").strip()
                 headers = {
@@ -32,14 +32,20 @@ with tab1:
                     "HTTP-Referer": "https://streamlit.app",
                     "X-Title": "RahaPath"
                 }
-                models = [
-                    "meta-llama/llama-3.3-70b-instruct:free",
-                    "google/gemma-3-27b-it:free",
-                    "mistralai/mistral-small-3.1-24b-instruct:free",
-                    "nvidia/nemotron-nano-9b-v2:free",
-                    "openrouter/free"
-                ]
-                for model_name in models:
+                live_free_models = []
+                try:
+                    m_res = requests.get("https://openrouter.ai/api/v1/models", timeout=10)
+                    if m_res.status_code == 200:
+                        for m in m_res.json().get("data", []):
+                            mid = m.get("id", "")
+                            if mid.endswith(":free"):
+                                live_free_models.append(mid)
+                except Exception:
+                    pass
+                if len(live_free_models) == 0:
+                    live_free_models = ["openrouter/free"]
+
+                for model_name in live_free_models[:6]:
                     if answered:
                         break
                     try:
@@ -50,7 +56,7 @@ with tab1:
                                 {"role": "user", "content": question}
                             ]
                         }
-                        response = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=20)
+                        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data, timeout=20)
                         if response.status_code == 200:
                             result = response.json()
                             for item in result.get("choices", []):
@@ -62,7 +68,7 @@ with tab1:
                     except Exception:
                         continue
                 if not answered:
-                    st.warning("سرورهای رایگان در این لحظه بسیار شلوغ هستند. لطفاً ۵ ثانیه صبر کنید و دوباره دکمه Ask AI را بزنید.")
+                    st.error("لطفاً در صفحه Privacy سایت OpenRouter گزینه دوم (Allow free endpoints that publish prompts) را هم روشن کنید و دوباره Ask AI را بزنید.")
 
 with tab2:
     st.header("🌍 Scholarship Finder")
