@@ -39,12 +39,13 @@ with tab1:
                     }
                     response = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=30)
                     if response.status_code == 200:
-                        answer = response.json()["choices"][0]["message"]["content"]
+                        result = response.json()
+                        answer = result["choices"][0]["message"]["content"]
                         st.success(answer)
                     if response.status_code != 200:
                         st.error("Server is busy right now. Please click 'Ask AI' again!")
-                except Exception:
-                    st.error("Please make sure OPENROUTER_API_KEY is saved in Streamlit Secrets.")
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
 with tab2:
     st.header("🌍 Scholarship Finder")
