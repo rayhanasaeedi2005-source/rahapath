@@ -28,22 +28,34 @@ with tab1:
                     api_key = st.secrets["OPENROUTER_API_KEY"]
                     headers = {
                         "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://streamlit.app",
+                        "X-Title": "RahaPath"
                     }
-                    data = {
-                        "model": "openrouter/free",
-                        "messages": [
-                            {"role": "system", "content": "You are RahaPath AI, a helpful and encouraging educational assistant for Afghan students. Answer clearly, accurately, and thoroughly in the same language the user asks."},
-                            {"role": "user", "content": question}
-                        ]
-                    }
-                    response = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=30)
-                    if response.status_code == 200:
-                        result = response.json()
-                        answer = result["choices"][0]["message"]["content"]
-                        st.success(answer)
-                    if response.status_code != 200:
-                        st.error("Server is busy right now. Please click 'Ask AI' again!")
+                    models = [
+                        "meta-llama/llama-3.3-70b-instruct:free",
+                        "google/gemma-3-27b-it:free",
+                        "mistralai/mistral-small-3.1-24b-instruct:free"
+                    ]
+                    answered = False
+                    for model_name in models:
+                        data = {
+                            "model": model_name,
+                            "messages": [
+                                {"role": "system", "content": "You are RahaPath AI, a helpful and encouraging educational assistant for Afghan students. Answer clearly, accurately, and thoroughly in the same language the user asks."},
+                                {"role": "user", "content": question}
+                            ]
+                        }
+                        response = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=30)
+                        if response.status_code == 200 and response.text.strip() != "":
+                            result = response.json()
+                            if "choices" in result and len(result["choices"]) > 0:
+                                answer = result["choices"]["message"]["content"]
+                                st.success(answer)
+                                answered = True
+                                break
+                    if not answered:
+                        st.warning("AI servers are very busy right now. Please wait 5 seconds and click 'Ask AI' again!")
                 except Exception as e:
                     st.error(f"Error: {e}")
 
