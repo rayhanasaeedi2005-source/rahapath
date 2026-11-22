@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-import urllib.parse
 
 st.set_page_config(page_title="RahaPath - Empowering Education", page_icon="🎓", layout="centered")
 
@@ -26,16 +25,26 @@ with tab1:
         if question.strip() != "":
             with st.spinner("Thinking... (در حال پاسخ‌گویی...)"):
                 try:
-                    prompt = f"You are RahaPath AI, a helpful and encouraging educational assistant for Afghan students. Answer clearly and thoroughly: {question}"
-                    encoded_prompt = urllib.parse.quote(prompt)
-                    url = f"https://pollinations.ai{encoded_prompt}"
-                    response = requests.get(url, timeout=25)
+                    api_key = st.secrets["OPENROUTER_API_KEY"]
+                    headers = {
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    }
+                    data = {
+                        "model": "openrouter/free",
+                        "messages": [
+                            {"role": "system", "content": "You are RahaPath AI, a helpful and encouraging educational assistant for Afghan students. Answer clearly, accurately, and thoroughly in the same language the user asks."},
+                            {"role": "user", "content": question}
+                        ]
+                    }
+                    response = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=30)
                     if response.status_code == 200:
-                        st.success(response.text)
+                        answer = response.json()["choices"][0]["message"]["content"]
+                        st.success(answer)
                     if response.status_code != 200:
                         st.error("Server is busy right now. Please click 'Ask AI' again!")
                 except Exception:
-                    st.error("Connection error. Please check your internet and try again.")
+                    st.error("Please make sure OPENROUTER_API_KEY is saved in Streamlit Secrets.")
 
 with tab2:
     st.header("🌍 Scholarship Finder")
