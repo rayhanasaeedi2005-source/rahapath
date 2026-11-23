@@ -73,7 +73,6 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🧮 Math & Solver"
 ])
 
-# --- Tab 1: AI Assistant ---
 with tab1:
     st.subheader("🤖 AI Study Assistant | دستیار هوشمند درسی")
     mode = st.selectbox("Select Mode / انتخاب حالت:", [
@@ -86,19 +85,17 @@ with tab1:
         if question.strip() == "":
             st.warning("Please enter your question first! / لطفاً اول سوال خود را بنویسید!")
         if question.strip() != "":
-            with st.spinner("Thinking... / در حال پردازش پاسخ..."):
-                p = question
-                if mode.startswith("2."): p = f"Translate between Persian and English and correct any grammar mistakes with clear explanations: {question}"
-                if mode.startswith("3."): p = f"Explain this topic simply step-by-step with clear examples in the same language as the input: {question}"
-                ans = ask_ai(p)
-                if ans != "": st.success(ans)
-                if ans == "": st.warning("Free AI servers are busy right now. Please wait 5 seconds and try again.")
+            st.info("⏳ Thinking... / در حال پردازش پاسخ...")
+            p = question
+            if mode.startswith("2."): p = f"Translate between Persian and English and correct any grammar mistakes with clear explanations: {question}"
+            if mode.startswith("3."): p = f"Explain this topic simply step-by-step with clear examples in the same language as the input: {question}"
+            ans = ask_ai(p)
+            if ans != "": st.success(ans)
+            if ans == "": st.warning("Free AI servers are busy right now. Please wait 5 seconds and try again.")
 
-# --- Tab 2: Smart Scholarship Matcher ---
 with tab2:
     st.subheader("🌍 Smart Scholarship Matcher | جستجوگر هوشمند بورسیه")
     st.write("Select your profile to find matching scholarships / شرایط خود را انتخاب کنید:")
-
     sch_mode = st.radio("Choose Section / انتخاب بخش:", [
         "1. Find Matching Scholarships (یافتن بورسیه بر اساس شرایط)",
         "2. Application Checklist (چک‌لیست مدارک لازم)",
@@ -130,11 +127,9 @@ with tab2:
                 st.success("**1. Chevening (UK) & Erasmus Mundus (Europe):** Fully funded Master's degrees | [chevening.org](https://chevening.org)")
                 st.success("**2. DAAD (Germany) & Fulbright (USA):** Prestigious graduate scholarships | [daad.de](https://daad.de)")
 
-            with st.spinner("Searching personalized AI recommendations..."):
-                ai_s = ask_ai(f"Recommend 3 specific real scholarships with official websites for a student with: Degree={deg}, GPA={gpa}, English={eng_lvl}, Region={region}. Provide bilingual English and Persian bullet points.")
-                if ai_s != "":
-                    st.markdown("#### ✨ Personalized AI Recommendations:")
-                    st.success(ai_s)
+            st.info("⏳ Searching personalized AI recommendations...")
+            ai_s = ask_ai(f"Recommend 3 specific real scholarships with official websites for a student with: Degree={deg}, GPA={gpa}, English={eng_lvl}, Region={region}. Provide bilingual English and Persian bullet points.")
+            if ai_s != "": st.success(ai_s)
 
     if sch_mode.startswith("2."):
         st.checkbox("1. Valid Passport or National ID (پاسپورت یا تذکره الکترونیکی)", key="c1")
@@ -150,11 +145,10 @@ with tab2:
         c_in = st.text_input("Target Country or Scholarship / کشور یا بورسیه مقصد:", key="sop_c")
         if st.button("✍️ Generate Motivation Letter / نگارش انگیزه‌نامه", key="sop_btn"):
             if f_in.strip() != "" and c_in.strip() != "":
-                with st.spinner("Writing your Motivation Letter..."):
-                    sop = ask_ai(f"Write a strong 400-word scholarship Motivation Letter in English for a student applying for {f_in} in {c_in}, highlighting resilience, self-learning, and community impact.")
-                    if sop != "": st.success(sop)
+                st.info("⏳ Writing your Motivation Letter...")
+                sop = ask_ai(f"Write a strong 400-word scholarship Motivation Letter in English for a student applying for {f_in} in {c_in}, highlighting resilience, self-learning, and community impact.")
+                if sop != "": st.success(sop)
 
-# --- Tab 3: Unlimited English Academy ---
 with tab3:
     st.subheader("📚 Unlimited English Academy | آکادمی جامع انگلیسی")
     eng_tab = st.selectbox("Choose Learning Module / انتخاب بخش آموزشی:", [
@@ -174,4 +168,6 @@ with tab3:
             "Motivational & Success (انگیزشی و موفقیت)"
         ], key="v_top")
         if st.button("🔄 Load 10 New Words / دریافت ۱۰ لغت جدید", key="new_words_btn"):
-            with st.spinner("Generating 10 fresh vocabulary words..."):
+            st.info("⏳ Generating 10 fresh vocabulary words...")
+            w_res = ask_ai(f"Give 10 useful English vocabulary words about '{v_topic}' that are fresh and varied. Format as a clean markdown table with columns: English Word | Persian Meaning | Example Sentence.")
+            if w_res != "": st.session_state["saved_words"] = w_res
