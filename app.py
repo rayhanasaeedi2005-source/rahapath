@@ -1,170 +1,103 @@
-import streamlit as st
-import requests
-import math
+with tab4:
+    st.subheader("📅 Smart Study Planner")
+    st.info("⏱️ **قانون تمرکز پومودورو:** ۲۵ دقیقه مطالعه عمیق + ۵ دقیقه استراحت.")
 
-st.set_page_config(page_title="RahaPath - Empowering Education", page_icon="🎓", layout="centered")
+    if "tasks" not in st.session_state:
+        st.session_state.tasks = []
 
-st.markdown("""
-<style>
-    .main-banner {
-        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-        padding: 22px;
-        border-radius: 16px;
-        color: white;
-        text-align: center;
-        margin-bottom: 18px;
-        box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
-    }
-    .main-banner h1 {
-        margin: 0;
-        font-size: 2.1rem;
-        color: white;
-    }
-    .main-banner p {
-        margin: 6px 0 0 0;
-        font-size: 1rem;
-        opacity: 0.95;
-    }
-    .stButton > button {
-        border-radius: 10px;
-        font-weight: 600;
-        width: 100%;
-    }
-</style>
-<div class="main-banner">
-    <h1>🎓 RahaPath</h1>
-    <p>Empowering Afghan Students through AI & Education</p>
-    <p style="font-size: 0.9rem; margin-top: 4px;">مسیر رهایی، خودآموزی و پیشرفت آموزشی</p>
-</div>
-""", unsafe_allow_html=True)
+    new_task = st.text_input("هدف درسی امروز را بنویسید (مثلاً: خواندن ۱۰ لغت جدید):")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("➕ افزودن هدف", key="task_btn") and new_task.strip() != "":
+            st.session_state.tasks.append(new_task.strip())
+            st.success("اضافه شد!")
+    with col2:
+        if st.button("🗑️ پاک کردن لیست", key="clear_btn"):
+            st.session_state.tasks = []
+            st.info("لیست پاک شد!")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🤖 AI Assistant",
-    "🌍 Scholarships",
-    "📚 English",
-    "📅 Planner",
-    "🧮 Solver"
-])
+    st.write("**پیشرفت امروز شما:**")
+    if len(st.session_state.tasks) == 0:
+        st.write("هنوز هدفی اضافه نکرده‌اید. اولین هدف درسی امروزتان را بالا بنویسید!")
+    if len(st.session_state.tasks) > 0:
+        completed = 0
+        for idx, t in enumerate(st.session_state.tasks):
+            if st.checkbox(t, key=f"task_{idx}"):
+                completed = completed + 1
+        progress = completed / len(st.session_state.tasks)
+        st.progress(progress)
+        st.write(f"**انجام شده:** {completed} از {len(st.session_state.tasks)} هدف ({int(progress * 100)}%)")
 
-with tab1:
-    st.subheader("🤖 AI Study Assistant")
-    st.write("هر سوال درسی، انگلیسی، برنامه‌نویسی یا عمومی دارید به فارسی یا انگلیسی بپرسید:")
-    question = st.text_area("سوال خود را بنویسید (Type your question here):", height=90)
-    if st.button("✨ Ask AI (دریافت پاسخ)", key="ai_btn"):
-        if question.strip() == "":
-            st.warning("لطفاً اول یک سوال بنویسید! (Please type a question first)")
-        if question.strip() != "":
-            with st.spinner("در حال فکر کردن و نوشتن پاسخ... (Thinking...)"):
-                answered = False
-                api_key = st.secrets.get("OPENROUTER_API_KEY", "").strip()
-                headers = {
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://streamlit.app",
-                    "X-Title": "RahaPath"
-                }
-                live_free_models = []
-                try:
-                    m_res = requests.get("https://openrouter.ai", timeout=10)
-                    if m_res.status_code == 200:
-                        for m in m_res.json().get("data", []):
-                            mid = m.get("id", "")
-                            if mid.endswith(":free"):
-                                live_free_models.append(mid)
-                except Exception:
-                    pass
-                if len(live_free_models) == 0:
-                    live_free_models = ["openrouter/free"]
-
-                for model_name in live_free_models[:6]:
-                    if answered:
-                        break
-                    try:
-                        data = {
-                            "model": model_name,
-                            "messages": [
-                                {"role": "system", "content": "You are RahaPath AI, a helpful and encouraging educational assistant for Afghan students. Answer clearly, accurately, and thoroughly in the same language the user asks."},
-                                {"role": "user", "content": question}
-                            ]
-                        }
-                        response = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=20)
-                        if response.status_code == 200:
-                            result = response.json()
-                            for item in result.get("choices", []):
-                                text = item.get("message", {}).get("content", "").strip()
-                                if text != "":
-                                    st.success(text)
-                                    answered = True
-                                    break
-                    except Exception:
-                        continue
-                if not answered:
-                    st.warning("سرورهای رایگان در این لحظه بسیار شلوغ هستند. لطفاً ۵ ثانیه صبر کنید و دوباره دکمه Ask AI را بزنید.")
-
-with tab2:
-    st.subheader("🌍 Scholarship Finder & Guide")
-    sch_section = st.radio("بخش مورد نظر را انتخاب کنید:", [
-        "1. Scholarship List (لیست بورسیه‌ها)",
-        "2. Document Checklist (چک‌لیست مدارک)",
-        "3. Motivation Letter Guide (راهنمای انگیزه‌نامه)"
+with tab5:
+    st.subheader("🧮 Smart Problem Solver")
+    tool = st.selectbox("ابزار مورد نظر را انتخاب کنید:", [
+        "1. Grade Calculator (محاسبه فیصدی نمرات)",
+        "2. Scientific Calculator (ماشین‌حساب علمی)",
+        "3. Unit Converter (تبدیل واحدها)"
     ])
 
-    if sch_section.startswith("1."):
-        level = st.selectbox("مقطع تحصیلی (Select Study Level):", [
-            "1. Bachelor (لیسانس)",
-            "2. Master (ماستری)",
-            "3. Online Free Universities (دانشگاه‌های آنلاین رایگان)"
+    if tool.startswith("1."):
+        scores_input = st.text_input("نمرات را با کاما جدا کنید (مثلاً: 85, 90, 95):")
+        if st.button("محاسبه فیصدی", key="calc_btn") and scores_input.strip() != "":
+            try:
+                scores = [float(x.strip()) for x in scores_input.split(",")]
+                avg = sum(scores) / len(scores)
+                st.metric("فیصدی کل (Average)", f"{avg:.2f}%")
+                if avg >= 85:
+                    st.success("درجه: A (ممتاز! عالی بود) 🌟")
+                if avg >= 70 and avg < 85:
+                    st.success("درجه: B (بسیار خوب) 🎉")
+                if avg >= 55 and avg < 70:
+                    st.info("درجه: C (کامیاب) 👍")
+                if avg < 55:
+                    st.warning("نیاز به تلاش بیشتر دارید. ادامه دهید! 💪")
+            except Exception:
+                st.error("لطفاً اعداد معتبر وارد کنید (مثال: 80, 90, 85).")
+
+    if tool.startswith("2."):
+        num1 = st.number_input("عدد اول:", value=0.0)
+        op = st.selectbox("عملیات:", [
+            "+ (جمع)",
+            "- (تفریق)",
+            "* (ضرب)",
+            "/ (تقسیم)",
+            "^ (توان)",
+            "sqrt (جذر مربع عدد اول)"
         ])
+        num2 = st.number_input("عدد دوم:", value=0.0)
+        if st.button("محاسبه", key="math_btn"):
+            if op.startswith("+"):
+                st.success(f"نتیجه: {num1 + num2}")
+            if op.startswith("-"):
+                st.success(f"نتیجه: {num1 - num2}")
+            if op.startswith("*"):
+                st.success(f"نتیجه: {num1 * num2}")
+            if op.startswith("/") and num2 != 0:
+                st.success(f"نتیجه: {num1 / num2}")
+            if op.startswith("/") and num2 == 0:
+                st.error("تقسیم بر صفر ممکن نیست!")
+            if op.startswith("^"):
+                st.success(f"نتیجه: {num1 ** num2}")
+            if op.startswith("sqrt"):
+                if num1 >= 0:
+                    st.success(f"نتیجه: {math.sqrt(num1):.4f}")
+                if num1 < 0:
+                    st.error("جذر عدد منفی تعریف نشده است!")
 
-        if level.startswith("1."):
-            st.success("**1. Türkiye Burslari (بورسیه دولت ترکیه)**\n- **مزایا:** شهریه کامل، خوابگاه، کمک‌هزینه ماهانه، بیمه و بلیت پرواز.\n- **شرایط:** دیپلم مکتب با معدل بالای ۷۰٪.\n- **سایت رسمی:** [turkiyeburslari.gov.tr](https://turkiyeburslari.gov.tr)")
-            st.success("**2. DAAD Scholarships (بورسیه آلمان)**\n- **مزایا:** کمک‌هزینه ماهانه و بیمه درمانی.\n- **سایت رسمی:** [daad.de](https://daad.de)")
-            st.success("**3. Romanian Government Scholarship (بورسیه رومانی)**\n- **مزایا:** تحصیل رایگان، خوابگاه و کمک‌هزینه ماهانه.\n- **سایت رسمی:** [scholarships.studyinromania.gov.ro](https://studyinromania.gov.ro)")
+    if tool.startswith("3."):
+        conv_type = st.radio("نوع تبدیل:", [
+            "1. Celsius to Fahrenheit (سانتی‌گراد به فارنهایت)",
+            "2. Kilometers to Miles (کیلومتر به مایل)",
+            "3. Hours to Minutes (ساعت به دقیقه)"
+        ])
+        val = st.number_input("مقدار را وارد کنید:", value=1.0)
+        if st.button("تبدیل کن", key="conv_btn"):
+            if conv_type.startswith("1."):
+                st.success(f"{val} °C = {(val * 9/5) + 32:.2f} °F")
+            if conv_type.startswith("2."):
+                st.success(f"{val} km = {val * 0.621371:.2f} miles")
+            if conv_type.startswith("3."):
+                st.success(f"{val} ساعت = {val * 60:.0f} دقیقه")
 
-        if level.startswith("2."):
-            st.success("**1. Chevening Scholarship (بورسیه انگلستان)**\n- **مزایا:** پوشش کامل شهریه، هزینه زندگی و پرواز.\n- **شرایط:** مدرک لیسانس + ۲ سال سابقه کار یا فعالیت داوطلبانه.\n- **سایت رسمی:** [chevening.org](https://chevening.org)")
-            st.success("**2. Erasmus Mundus (بورسیه اروپا)**\n- **مزایا:** تحصیل در ۲ تا ۳ کشور اروپایی با بورسیه کامل.\n- **سایت رسمی:** [eacea.ec.europa.eu](https://europa.eu)")
-            st.success("**3. Fulbright Program (فولبرایت آمریکا)**\n- **مزایا:** بورسیه کامل مقطع ماستری در آمریکا.\n- **سایت رسمی:** [foreign.fulbrightonline.org](https://fulbrightonline.org)")
-
-        if level.startswith("3."):
-            st.info("**1. University of the People (UoPeople)**\n- دانشگاه آنلاین معتبر آمریکایی، کاملاً بدون شهریه در رشته‌های کمپیوتر ساینس و مدیریت.\n- **سایت رسمی:** [uopeople.edu](https://uopeople.edu)")
-            st.info("**2. Coursera Financial Aid**\n- دریافت گواهینامه‌های رایگان از گوگل، متا و دانشگاه‌های برتر دنیا.\n- **سایت رسمی:** [coursera.org](https://coursera.org)")
-
-    if sch_section.startswith("2."):
-        st.write("**مدارک ضروری برای اپلای بورسیه را آماده و تیک بزنید:**")
-        st.checkbox("1. پاسپورت معتبر یا تذکره الکترونیکی (Valid Passport / Tazkira)")
-        st.checkbox("2. شهادت‌نامه و نمرات سه‌ساله با ترجمه انگلیسی (Diploma & Transcripts)")
-        st.checkbox("3. انگیزه‌نامه قوی و اختصاصی (Motivation Letter / SOP)")
-        st.checkbox("4. دو توصیه‌نامه از استادان یا معلمان (Two Recommendation Letters)")
-        st.checkbox("5. مدرک زبان انگلیسی مانند Duolingo یا IELTS")
-        st.checkbox("6. رزومه تحصیلی و فعالیت‌های داوطلبانه (Academic CV)")
-        st.info("💡 تمام مدارک را با کیفیت بالا اسکن (PDF) کنید و در یک پوشه در Google Drive نگه دارید.")
-
-    if sch_section.startswith("3."):
-        st.write("یک انگیزه‌نامه استاندارد باید حدود **۵۰۰ تا ۷۰۰ کلمه** و شامل ۴ پاراگراف باشد:")
-        st.success("**پاراگراف ۱ (معرفی):** خودتان را معرفی کنید، بگویید به چه رشته‌ای علاقه دارید و هدف اصلی شما چیست.")
-        st.success("**پاراگراف ۲ (سوابق و پشتکار):** درباره دستاوردهای درسی و مهارت‌هایی که خودتان یاد گرفته‌اید (مثل انگلیسی یا کدنویسی) بنویسید.")
-        st.success("**پاراگراف ۳ (چرا این بورسیه):** توضیح دهید چرا این کشور و رشته را انتخاب کرده‌اید.")
-        st.success("**پاراگراف ۴ (اهداف آینده):** بگویید پس از فارغ‌التحصیلی چطور به جامعه و پیشرفت دیگران کمک خواهید کرد.")
-
-with tab3:
-    st.subheader("📚 English Learning Hub")
-    eng_section = st.radio("بخش مورد نظر را انتخاب کنید:", [
-        "1. Vocabulary (لغات مهم)",
-        "2. Conversation (مکالمه روزمره)",
-        "3. Grammar (گرامر کاربردی)",
-        "4. Quiz (آزمون ۵ سوالی)"
-    ])
-
-    if eng_section.startswith("1."):
-        st.markdown("| English Word | معنی فارسی | Example Sentence |\n| :--- | :--- | :--- |\n| **Resilient** | مقاوم، تاب‌آور | *Afghan students are strong and resilient.* |\n| **Opportunity** | فرصت | *Education creates new opportunities.* |\n| **Achieve** | به دست آوردن، موفق شدن | *You can achieve all your dreams.* |\n| **Determine** | مصمم بودن | *She is determined to learn coding.* |\n| **Knowledge** | دانش، علم | *Knowledge is power that no one can take.* |\n| **Perseverance** | پشتکار، استقامت | *Success comes through daily perseverance.* |\n| **Fluently** | روان و سلیس | *I want to speak English fluently.* |\n| **Independent** | مستقل | *Learning skills makes you independent.* |")
-
-    if eng_section.startswith("2."):
-        st.info("**1. معرفی خود (Introducing Yourself):**\n- *Hello! My name is Rayhana, and I am passionate about technology.*\n- سلام! نام من ریحانه است و به تکنولوژی علاقه‌مند هستم.")
-        st.info("**2. صحبت درباره اهداف (Talking About Goals):**\n- *I am studying hard to win an international scholarship.*\n- من سخت درس می‌خوانم تا یک بورسیه بین‌المللی به دست بیاورم.")
-        st.info("**3. درخواست کمک درسی (Asking for Help):**\n- *Could you please explain this topic in simple words?*\n- آیا می‌توانید لطفاً این موضوع را با کلمات ساده توضیح دهید؟")
-        st.info("**4. انگیزه دادن به دوستان (Encouraging Friends):**\n- *Never give up! Every small step brings us closer to success.*\n- هرگز تسلیم نشو! هر قدم کوچک ما را به موفقیت نزدیک‌تر می‌کند.")
-
-    if eng_section.startswith("3."):
-        st.write("**Simple Present Tense (زمان حال ساده):** برای بیان عادت‌های روزمره و حقایق علمی استفاده می‌شود.")
-        st.success("**فرمول مثبت:**\n- **I / You / We / They** + فعل ساده (*We **study** English every day.*)\n- **He / She / It** + فعل + **s / es** (*She **codes** every evening.*)")
+st.markdown("---")
+st.caption("Built with ❤️ by Rayhana | RahaPath Educational Platform (2026)")
