@@ -34,7 +34,7 @@ with tab1:
                 }
                 live_free_models = []
                 try:
-                    m_res = requests.get("https://openrouter.ai/api/v1/models", timeout=10)
+                    m_res = requests.get("https://openrouter.ai", timeout=10)
                     if m_res.status_code == 200:
                         for m in m_res.json().get("data", []):
                             mid = m.get("id", "")
@@ -56,7 +56,7 @@ with tab1:
                                 {"role": "user", "content": question}
                             ]
                         }
-                        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data, timeout=20)
+                        response = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=20)
                         if response.status_code == 200:
                             result = response.json()
                             for item in result.get("choices", []):
@@ -68,7 +68,7 @@ with tab1:
                     except Exception:
                         continue
                 if not answered:
-                    st.error("لطفاً در صفحه Privacy سایت OpenRouter گزینه دوم (Allow free endpoints that publish prompts) را هم روشن کنید و دوباره Ask AI را بزنید.")
+                    st.warning("سرورهای رایگان در این لحظه بسیار شلوغ هستند. لطفاً ۵ ثانیه صبر کنید و دوباره دکمه Ask AI را بزنید.")
 
 with tab2:
     st.header("🌍 Scholarship Finder")
@@ -87,28 +87,70 @@ with tab2:
 
 with tab3:
     st.header("📚 English Learning Hub")
-    st.subheader("📖 Today's Vocabulary (لغات امروز)")
-    st.markdown("| English Word | Meaning (معنی فارسی) | Example Sentence |\n| :--- | :--- | :--- |\n| **Resilient** | مقاوم، تاب‌آور | *Afghan students are strong and resilient.* |\n| **Opportunity** | فرصت | *Education creates new opportunities.* |\n| **Achieve** | به دست آوردن، موفق شدن | *You can achieve all your dreams.* |\n| **Determine** | مصمم بودن | *She is determined to learn coding.* |")
-    st.markdown("---")
-    st.subheader("📝 Quick English Quiz (آزمون کوتاه)")
-    q1 = st.radio("1. What is the synonym of 'Resilient'?", ["Weak", "Strong", "Tired"], key="q1")
-    q2 = st.radio("2. Which word means 'فرصت'?", ["Achieve", "Opportunity", "Barrier"], key="q2")
-    q3 = st.radio("3. Complete: 'She is ____ to succeed.'", ["determined", "tired", "afraid"], key="q3")
-    if st.button("Submit Quiz", key="quiz_btn"):
-        score = 0
-        if q1 == "Strong":
-            score = score + 1
-        if q2 == "Opportunity":
-            score = score + 1
-        if q3 == "determined":
-            score = score + 1
-        st.metric("Your Score", f"{score} / 3")
-        if score == 3:
-            st.success("🎉 Perfect! 3/3! You mastered today's lesson!")
-        if score == 2:
-            st.info("👍 Good job! 2/3! Review the table above once more.")
-        if score < 2:
-            st.warning("💪 Keep practicing! Read the vocabulary table and try again.")
+    eng_section = st.radio("Choose a lesson (بخش مورد نظر را انتخاب کنید):", [
+        "📖 Vocabulary (لغات مهم)",
+        "🗣️ Daily Conversation (مکالمه روزمره)",
+        "📐 Grammar (گرامر کاربردی)",
+        "📝 English Quiz (آزمون ۵ سوالی)"
+    ])
+
+    if eng_section == "📖 Vocabulary (لغات مهم)":
+        st.subheader("Essential Academic & Motivational Words")
+        st.markdown("""
+
+| English Word | Meaning (معنی فارسی) | Example Sentence |
+| :--- | :--- | :--- |
+| **Resilient** | مقاوم، تاب‌آور | *Afghan students are strong and resilient.* |
+| **Opportunity** | فرصت | *Education creates new opportunities.* |
+| **Achieve** | به دست آوردن، موفق شدن | *You can achieve all your dreams.* |
+| **Determine** | مصمم بودن | *She is determined to learn coding.* |
+| **Knowledge** | دانش، علم | *Knowledge is power that no one can take.* |
+| **Perseverance** | پشتکار، استقامت | *Success comes through daily perseverance.* |
+| **Fluently** | روان و سلیس | *I want to speak English fluently.* |
+| **Independent** | مستقل | *Learning skills makes you independent.* |
+""")
+
+    if eng_section == "🗣️ Daily Conversation (مکالمه روزمره)":
+        st.subheader("Useful Everyday Phrases")
+        st.info("**1. Introducing Yourself (معرفی خود):**\n- *Hello! My name is Rayhana, and I am passionate about technology.*\n- سلام! نام من ریحانه است و به تکنولوژی علاقه‌مند هستم.")
+        st.info("**2. Talking About Goals (صحبت درباره اهداف):**\n- *I am studying hard to win an international scholarship.*\n- من سخت درس می‌خوانم تا یک بورسیه بین‌المللی به دست بیاورم.")
+        st.info("**3. Asking for Help (درخواست کمک درسی):**\n- *Could you please explain this topic in simple words?*\n- آیا می‌توانید لطفاً این موضوع را با کلمات ساده توضیح دهید؟")
+        st.info("**4. Encouraging Friends (انگیزه دادن به دوستان):**\n- *Never give up! Every small step brings us closer to success.*\n- هرگز تسلیم نشو! هر قدم کوچک ما را به موفقیت نزدیک‌تر می‌کند.")
+
+    if eng_section == "📐 Grammar (گرامر کاربردی)":
+        st.subheader("Simple Present Tense (زمان حال ساده)")
+        st.write("از این زمان برای بیان **عادت‌های روزمره، حقایق علمی و برنامه‌های همیشگی** استفاده می‌کنیم.")
+        st.success("**Formula (فرمول):**\n- **I / You / We / They** + Verb (فعل ساده)\n  *Example:* We **study** English every day.\n- **He / She / It** + Verb + **s / es**\n  *Example:* She **codes** on her phone every evening.")
+        st.warning("**Negative (منفی کردن):**\n- Use **do not (don't)** or **does not (doesn't)**:\n  *Example:* They **don't** give up. / He **doesn't** waste time.")
+
+    if eng_section == "📝 English Quiz (آزمون ۵ سوالی)":
+        st.subheader("Test Your English Skills!")
+        q1 = st.radio("1. What is the synonym of 'Resilient'?", ["Weak", "Strong", "Tired"], key="q1")
+        q2 = st.radio("2. Which word means 'پشتکار و استقامت'?", ["Perseverance", "Barrier", "Mistake"], key="q2")
+        q3 = st.radio("3. Complete: 'She ____ Python every day.'", ["learn", "learns", "learning"], key="q3")
+        q4 = st.radio("4. Complete: 'We ____ give up on our dreams.'", ["doesn't", "don't", "isn't"], key="q4")
+        q5 = st.radio("5. Which word means 'روان و سلیس'?", ["Slowly", "Fluently", "Quietly"], key="q5")
+
+        if st.button("Submit Quiz", key="quiz_btn"):
+            score = 0
+            if q1 == "Strong":
+                score = score + 1
+            if q2 == "Perseverance":
+                score = score + 1
+            if q3 == "learns":
+                score = score + 1
+            if q4 == "don't":
+                score = score + 1
+            if q5 == "Fluently":
+                score = score + 1
+
+            st.metric("Your Final Score", f"{score} / 5")
+            if score == 5:
+                st.success("🎉 Amazing! 5/5! You mastered all the lessons!")
+            if score == 3 or score == 4:
+                st.info("👍 Great job! Review the Vocabulary and Grammar sections to get 5/5!")
+            if score < 3:
+                st.warning("💪 Good start! Read the lessons above once more and try again.")
 
 with tab4:
     st.header("📅 Daily Study Planner")
@@ -129,26 +171,3 @@ with tab5:
     tool = st.selectbox("Choose a tool:", ["Grade Percentage Calculator (فیصدی نمرات)", "Quick Math Calculator"])
     if tool == "Grade Percentage Calculator (فیصدی نمرات)":
         scores_input = st.text_input("Enter scores separated by commas (مثلاً: 85, 90, 95):")
-        if st.button("Calculate Percentage", key="calc_btn") and scores_input:
-            scores = [float(x.strip()) for x in scores_input.split(",")]
-            avg = sum(scores) / len(scores)
-            st.metric("Average Percentage", f"{avg:.2f}%")
-            if avg >= 55:
-                st.success("Status: Passed! Great job! 🎉")
-            if avg < 55:
-                st.warning("Status: Needs more study. Keep trying!")
-    if tool == "Quick Math Calculator":
-        num1 = st.number_input("First number:", value=0.0)
-        op = st.selectbox("Operation:", ["+", "-", "*", "/"])
-        num2 = st.number_input("Second number:", value=0.0)
-        if st.button("Solve", key="math_btn"):
-            if op == "+":
-                st.success(f"Result: {num1 + num2}")
-            if op == "-":
-                st.success(f"Result: {num1 - num2}")
-            if op == "*":
-                st.success(f"Result: {num1 * num2}")
-            if op == "/" and num2 != 0:
-                st.success(f"Result: {num1 / num2}")
-            if op == "/" and num2 == 0:
-                st.error("Cannot divide by zero!")
