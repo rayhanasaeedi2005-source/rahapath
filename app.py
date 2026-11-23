@@ -26,10 +26,12 @@ def ask_ai(prompt_text):
         r = requests.get("https://openrouter.ai", timeout=8)
         if r.status_code == 200:
             for item in r.json().get("data", []):
-                if item.get("id", "").endswith(":free"): free_models.append(item.get("id"))
+                if item.get("id", "").endswith(":free"):
+                    free_models.append(item.get("id"))
     except Exception:
         pass
-    if len(free_models) == 0: free_models = ["openrouter/free"]
+    if len(free_models) == 0:
+        free_models = ["openrouter/free"]
     for m in free_models[:8]:
         try:
             data = {"model": m, "messages": [{"role": "system", "content": "You are RahaPath AI, a helpful educational assistant. Answer clearly and thoroughly in the exact same language the user asks."}, {"role": "user", "content": prompt_text}]}
@@ -37,7 +39,8 @@ def ask_ai(prompt_text):
             if res.status_code == 200:
                 for ch in res.json().get("choices", []):
                     txt = ch.get("message", {}).get("content", "").strip()
-                    if txt != "": return txt
+                    if txt != "":
+                        return txt
         except Exception:
             continue
     return ""
@@ -129,7 +132,5 @@ with tab4:
     st.info("⏱️ **Pomodoro Rule:** 25 mins study + 5 mins break | ۲۵ دقیقه مطالعه + ۵ دقیقه استراحت")
     if "tasks" not in st.session_state: st.session_state.tasks = []
     nt = st.text_input("Study Goal / هدف درسی امروز:", key="nt4")
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("➕ Add / افزودن", key="ba4") and nt.strip() != "": st.session_state.tasks.append(nt.strip())
-    with c2:
+    if st.button("➕ Add Goal / افزودن هدف", key="ba4") and nt.strip() != "":
+        st.session_state.tasks.append(nt.strip())
