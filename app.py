@@ -19,11 +19,44 @@ st.markdown("""
     .stButton > button { border-radius: 10px; font-weight: 600; width: 100%; }
 </style>
 <div class="main-banner">
-    <h1>🎓 RahaPath</h1>
+    <h1>🎓 RahaPath v4.0</h1>
     <p>Empowering Afghan Students through AI & Education</p>
-    <p>مسیر رهایی، خودآموزی و پیشرفت آموزشی</p>
+    <p>پلتفرم جامع خودآموزی، زبان انگلیسی، بورسیه‌ها و هوش مصنوعی</p>
 </div>
 """, unsafe_allow_html=True)
+
+def ask_openrouter(prompt_text, sys_role="You are RahaPath AI, a helpful educational assistant for Afghan students. Answer clearly, accurately, and thoroughly in the same language the user asks."):
+    api_key = st.secrets.get("OPENROUTER_API_KEY", "").strip()
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://streamlit.app",
+        "X-Title": "RahaPath"
+    }
+    models = [
+        "openrouter/free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "google/gemma-3-27b-it:free",
+        "mistralai/mistral-small-3.1-24b-instruct:free"
+    ]
+    for m in models:
+        try:
+            data = {
+                "model": m,
+                "messages": [
+                    {"role": "system", "content": sys_role},
+                    {"role": "user", "content": prompt_text}
+                ]
+            }
+            res = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=25)
+            if res.status_code == 200:
+                for item in res.json().get("choices", []):
+                    text = item.get("message", {}).get("content", "").strip()
+                    if text != "":
+                        return text
+        except Exception:
+            continue
+    return ""
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🤖 AI Assistant",
@@ -35,141 +68,104 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 
 with tab1:
     st.subheader("🤖 AI Study Assistant")
-    question = st.text_area("سوال درسی یا عمومی خود را به فارسی یا انگلیسی بنویسید:", height=90)
-    if st.button("✨ Ask AI", key="ai_btn"):
+    mode = st.selectbox("حالت دستیار (Select Mode):", [
+        "1. پرسش و پاسخ عمومی و درسی (General & Study Q&A)",
+        "2. ترجمه و اصلاح گرامر متن انگلیسی (Translator & Grammar Fixer)",
+        "3. توضیح ساده موضوعات سخت علمی (Explain Like I'm 15)"
+    ])
+    question = st.text_area("متن یا سوال خود را بنویسید (به فارسی یا انگلیسی):", height=100)
+    if st.button("✨ دریافت پاسخ (Ask AI)", key="ai_btn"):
         if question.strip() == "":
-            st.warning("لطفاً اول یک سوال بنویسید!")
+            st.warning("لطفاً اول سوال یا متن خود را بنویسید!")
         if question.strip() != "":
-            with st.spinner("در حال نوشتن پاسخ..."):
-                answered = False
-                api_key = st.secrets.get("OPENROUTER_API_KEY", "").strip()
-                headers = {
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://streamlit.app",
-                    "X-Title": "RahaPath"
-                }
-                models = ["openrouter/free", "meta-llama/llama-3.3-70b-instruct:free", "google/gemma-3-27b-it:free"]
-                for m in models:
-                    if answered:
-                        break
-                    try:
-                        data = {
-                            "model": m,
-                            "messages": [
-                                {"role": "system", "content": "You are RahaPath AI, a helpful educational assistant for Afghan students. Answer clearly and thoroughly in the same language the user asks."},
-                                {"role": "user", "content": question}
-                            ]
-                        }
-                        res = requests.post("https://openrouter.ai", headers=headers, json=data, timeout=20)
-                        if res.status_code == 200:
-                            for item in res.json().get("choices", []):
-                                text = item.get("message", {}).get("content", "").strip()
-                                if text != "":
-                                    st.success(text)
-                                    answered = True
-                                    break
-                    except Exception:
-                        continue
-                if not answered:
-                    st.warning("سرور شلوغ است، لطفاً ۵ ثانیه بعد دوباره دکمه Ask AI را بزنید.")
+            with st.spinner("در حال پردازش پاسخ..."):
+                final_prompt = question
+                if mode.startswith("2."):
+                    final_prompt = f"Translate this between Persian and English, and if it is English, correct any grammar mistakes and explain them clearly: {question}"
+                if mode.startswith("3."):
+                    final_prompt = f"Explain this concept in very simple, clear, step-by-step terms with examples in the same language: {question}"
+                ans = ask_openrouter(final_prompt)
+                if ans != "":
+                    st.success(ans)
+                if ans == "":
+                    st.warning("سرورهای رایگان شلوغ هستند، لطفاً ۵ ثانیه صبر کنید و دوباره بزنید.")
 
 with tab2:
-    st.subheader("🌍 Scholarship Finder & Guide")
-    sch = st.radio("بخش مورد نظر:", ["1. لیست بورسیه‌ها", "2. چک‌لیست مدارک", "3. راهنمای انگیزه‌نامه"])
+    st.subheader("🌍 Global Scholarships & Apply Hub")
+    sch = st.radio("بخش مورد نظر:", [
+        "1. بانک جامع بورسیه‌ها (Scholarship Database)",
+        "2. چک‌لیست کامل مدارک (10-Step Checklist)",
+        "3. نگارش هوشمند انگیزه‌نامه (AI Motivation Letter)"
+    ])
     if sch.startswith("1."):
-        lvl = st.selectbox("مقطع تحصیلی:", ["Bachelor (لیسانس)", "Master (ماستری)", "Online Free Universities"])
-        if lvl == "Bachelor (لیسانس)":
-            st.success("**1. Türkiye Burslari (ترکیه):** شهریه کامل، خوابگاه و کمک‌هزینه | [turkiyeburslari.gov.tr](https://turkiyeburslari.gov.tr)")
-            st.success("**2. DAAD (آلمان):** کمک‌هزینه ماهانه و بیمه | [daad.de](https://daad.de)")
-            st.success("**3. Romanian Scholarship (رومانی):** تحصیل و خوابگاه رایگان | [studyinromania.gov.ro](https://studyinromania.gov.ro)")
-        if lvl == "Master (ماستری)":
-            st.success("**1. Chevening (انگلستان):** پوشش کامل هزینه‌ها | [chevening.org](https://chevening.org)")
-            st.success("**2. Erasmus Mundus (اروپا):** تحصیل در چند کشور اروپایی | [eacea.ec.europa.eu](https://europa.eu)")
-            st.success("**3. Fulbright (آمریکا):** بورسیه کامل ماستری | [fulbrightonline.org](https://fulbrightonline.org)")
-        if lvl == "Online Free Universities":
-            st.info("**1. University of the People:** دانشگاه آنلاین رایگان آمریکایی | [uopeople.edu](https://uopeople.edu)")
-            st.info("**2. Coursera Financial Aid:** کورس‌های رایگان دانشگاه‌های برتر | [coursera.org](https://coursera.org)")
+        lvl = st.selectbox("مقطع یا نوع بورسیه:", [
+            "1. Bachelor (لیسانس - آسیا و اروپا)",
+            "2. Master & PhD (ماستری و دکترا)",
+            "3. Free Online Degrees & Certificates (تحصیل آنلاین رایگان)"
+        ])
+        if lvl.startswith("1."):
+            st.success("**1. Türkiye Burslari (ترکیه):** شهریه کامل، خوابگاه، کمک‌هزینه ماهانه، بیمه و پرواز | [turkiyeburslari.gov.tr](https://turkiyeburslari.gov.tr)")
+            st.success("**2. Stipendium Hungaricum (مجارستان):** تحصیل رایگان، خوابگاه و کمک‌هزینه زندگی در اروپا | [stipendiumhungaricum.hu](https://stipendiumhungaricum.hu)")
+            st.success("**3. MEXT Scholarship (جاپان):** بورسیه کامل دولت جاپان برای مقطع لیسانس | [studyinjapan.go.jp](https://studyinjapan.go.jp)")
+            st.success("**4. GKS - Global Korea Scholarship (کوریای جنوبی):** پوشش کامل شهریه، زبان کوریایی و زندگی | [studyinkorea.go.kr](https://studyinkorea.go.kr)")
+            st.success("**5. Romanian Government Scholarship (رومانی):** تحصیل رایگان و کمک‌هزینه ماهانه | [studyinromania.gov.ro](https://studyinromania.gov.ro)")
+        if lvl.startswith("2."):
+            st.success("**1. Chevening Scholarship (انگلستان):** پوشش کامل شهریه، پرواز و هزینه زندگی | [chevening.org](https://chevening.org)")
+            st.success("**2. Erasmus Mundus (اتحادیه اروپا):** تحصیل مشترک در ۲ تا ۳ کشور اروپایی با بورسیه کامل | [eacea.ec.europa.eu](https://europa.eu)")
+            st.success("**3. DAAD Scholarships (آلمان):** بورسیه‌های متنوع ماستری و تحقیقاتی | [daad.de](https://daad.de)")
+            st.success("**4. Fulbright Program (آمریکا):** بورسیه کامل مقطع ماستری در دانشگاه‌های آمریکا | [foreign.fulbrightonline.org](https://fulbrightonline.org)")
+            st.success("**5. Australia Awards (استرالیا):** بورسیه کامل توسعه و ماستری | [dfat.gov.au](https://dfat.gov.au)")
+        if lvl.startswith("3."):
+            st.info("**1. University of the People (UoPeople):** دانشگاه آنلاین آمریکایی بدون شهریه در کمپیوتر ساینس و مدیریت | [uopeople.edu](https://uopeople.edu)")
+            st.info("**2. Coursera Financial Aid:** دریافت رایگان گواهینامه‌های Google, Meta و دانشگاه‌های برتر | [coursera.org](https://coursera.org)")
+            st.info("**3. edX Financial Assistance:** تخفیف تا ۹۰٪ یا کورس‌های رایگان از Harvard و MIT | [edx.org](https://edx.org)")
+            st.info("**4. Saylor Academy:** کورس‌های دانشگاهی کاملاً رایگان با گواهینامه | [saylor.org](https://saylor.org)")
+
     if sch.startswith("2."):
+        st.write("**چک‌لیست ۱۰ مرحله‌ای آماده‌سازی مدارک بورسیه:**")
         st.checkbox("1. پاسپورت معتبر یا تذکره الکترونیکی")
-        st.checkbox("2. شهادت‌نامه و نمرات سه‌ساله با ترجمه انگلیسی")
-        st.checkbox("3. انگیزه‌نامه قوی (Motivation Letter)")
-        st.checkbox("4. دو توصیه‌نامه از استادان")
-        st.checkbox("5. مدرک زبان انگلیسی (Duolingo / IELTS)")
+        st.checkbox("2. شهادت‌نامه مکتب و نمرات سه‌ساله با مهر وزارت خارجه")
+        st.checkbox("3. ترجمه رسمی انگلیسی تمام مدارک تحصیلی")
+        st.checkbox("4. دیپلم و ترانسکریپت لیسانس (برای متقاضیان ماستری)")
+        st.checkbox("5. انگیزه‌نامه اختصاصی (Motivation Letter / SOP)")
+        st.checkbox("6. دو توصیه‌نامه رسمی از استادان (Recommendation Letters)")
+        st.checkbox("7. رزومه تحصیلی استاندارد (Academic CV)")
+        st.checkbox("8. مدرک زبان انگلیسی (Duolingo English Test / IELTS / TOEFL)")
+        st.checkbox("9. گواهی فعالیت‌های داوطلبانه، اجتماعی یا پروژه‌ها (مثل ساخت RahaPath!)")
+        st.checkbox("10. اسکن باکیفیت و ذخیره در Google Drive")
+
     if sch.startswith("3."):
-        st.success("**پاراگراف ۱:** معرفی خود و علاقه به رشته.\n\n**پاراگراف ۲:** دستاوردهای درسی و مهارت‌های خودآموز.\n\n**پاراگراف ۳:** دلیل انتخاب دانشگاه و کشور مقصد.\n\n**پاراگراف ۴:** اهداف آینده و کمک به جامعه.")
+        st.write("**مولد هوشمند انگیزه‌نامه (AI Motivation Letter):**")
+        field = st.text_input("رشته تحصیلی مورد نظر (مثلاً: Computer Science):")
+        country = st.text_input("کشور یا بورسیه مقصد (مثلاً: Turkey Burslari):")
+        if st.button("✍️ نوشتن نمونه انگیزه‌نامه", key="sop_btn"):
+            if field.strip() == "" or country.strip() == "":
+                st.warning("لطفاً رشته و کشور مقصد را وارد کنید.")
+            if field.strip() != "" and country.strip() != "":
+                with st.spinner("در حال نوشتن انگیزه‌نامه حرفه‌ای..."):
+                    sop_prompt = f"Write a strong, inspiring 400-word scholarship Motivation Letter in English for an Afghan student applying for {field} in {country}. Highlight resilience, self-learning, and future contribution."
+                    sop_res = ask_openrouter(sop_prompt)
+                    if sop_res != "":
+                        st.success(sop_res)
+                    if sop_res == "":
+                        st.warning("سرور شلوغ است، چند ثانیه بعد دوباره تلاش کنید.")
 
 with tab3:
-    st.subheader("📚 English Learning Hub")
-    eng = st.radio("بخش مورد نظر:", ["1. لغات مهم", "2. مکالمه روزمره", "3. گرامر کاربردی", "4. آزمون ۵ سوالی"])
+    st.subheader("📚 Comprehensive English Academy")
+    eng = st.radio("بخش مورد نظر را انتخاب کنید:", [
+        "1. بانک لغات سطح‌بندی‌شده (24+ Vocabulary)",
+        "2. تولید نامحدود درس و لغت جدید (AI Unlimited Lessons)",
+        "3. گرامر جامع زمان‌ها (Complete Grammar)",
+        "4. مکالمات کاربردی (Real Conversations)",
+        "5. آزمون ۸ سوالی + تولید آزمون جدید (Quiz)"
+    ])
+
     if eng.startswith("1."):
-        st.markdown("| Word | معنی | Example |\n| :--- | :--- | :--- |\n| **Resilient** | مقاوم، تاب‌آور | *Afghan students are resilient.* |\n| **Opportunity** | فرصت | *Education creates opportunities.* |\n| **Achieve** | موفق شدن | *You can achieve your dreams.* |\n| **Perseverance** | پشتکار | *Success needs perseverance.* |\n| **Fluently** | روان و سلیس | *I speak English fluently.* |")
-    if eng.startswith("2."):
-        st.info("**Introducing Yourself:** *Hello! My name is Rayhana, and I love technology.*\n(سلام! نام من ریحانه است و به تکنولوژی علاقه دارم.)")
-        st.info("**Goals:** *I am studying hard to win a scholarship.*\n(من سخت درس می‌خوانم تا بورسیه بگیرم.)")
-        st.info("**Motivation:** *Never give up! Every small step matters.*\n(هرگز تسلیم نشو! هر قدم کوچک مهم است.)")
-    if eng.startswith("3."):
-        st.success("**Simple Present (حال ساده):**\n- **I / You / We / They** + فعل ساده (*We **study** every day.*)\n- **He / She / It** + فعل + **s/es** (*She **codes** every night.*)")
-    if eng.startswith("4."):
-        q1 = st.radio("1. Synonym of 'Resilient'?", ["Weak", "Strong", "Tired"], key="q1")
-        q2 = st.radio("2. Meaning of 'Perseverance'?", ["پشتکار", "مانع", "اشتباه"], key="q2")
-        q3 = st.radio("3. 'She ____ Python daily.'", ["learn", "learns", "learning"], key="q3")
-        q4 = st.radio("4. 'We ____ give up.'", ["doesn't", "don't", "isn't"], key="q4")
-        q5 = st.radio("5. Meaning of 'Fluently'?", ["آهسته", "روان و سلیس", "ساکت"], key="q5")
-        if st.button("✅ ثبت آزمون", key="quiz_btn"):
-            score = sum([q1 == "Strong", q2 == "پشتکار", q3 == "learns", q4 == "don't", q5 == "روان و سلیس"])
-            st.metric("نمره شما", f"{score} / 5")
-            if score == 5:
-                st.success("🎉 عالی! ۵ از ۵!")
-            if score < 5:
-                st.info("👍 خوب بود! درس‌ها را مرور کنید و دوباره امتحان دهید.")
-
-with tab4:
-    st.subheader("📅 Smart Study Planner")
-    st.info("⏱️ **قانون پومودورو:** ۲۵ دقیقه مطالعه عمیق + ۵ دقیقه استراحت")
-    if "tasks" not in st.session_state:
-        st.session_state.tasks = []
-    new_task = st.text_input("هدف درسی امروز را بنویسید:")
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("➕ افزودن", key="add_t") and new_task.strip() != "":
-            st.session_state.tasks.append(new_task.strip())
-    with c2:
-        if st.button("🗑️ پاک کردن", key="clr_t"):
-            st.session_state.tasks = []
-    if len(st.session_state.tasks) > 0:
-        done = sum([st.checkbox(t, key=f"t_{i}") for i, t in enumerate(st.session_state.tasks)])
-        st.progress(done / len(st.session_state.tasks))
-        st.write(f"انجام شده: {done} از {len(st.session_state.tasks)}")
-
-with tab5:
-    st.subheader("🧮 Smart Problem Solver")
-    tool = st.selectbox("انتخاب ابزار:", ["1. محاسبه فیصدی نمرات", "2. ماشین‌حساب علمی", "3. تبدیل واحدها"])
-    if tool.startswith("1."):
-        s_in = st.text_input("نمرات را با کاما جدا کنید (مثلاً: 85, 90, 95):")
-        if st.button("محاسبه فیصدی", key="c_btn") and s_in.strip() != "":
-            try:
-                sc = [float(x.strip()) for x in s_in.split(",")]
-                avg = sum(sc) / len(sc)
-                st.metric("فیصدی کل", f"{avg:.2f}%")
-                if avg >= 55:
-                    st.success("وضعیت: کامیاب! آفرین 🎉")
-                if avg < 55:
-                    st.warning("نیاز به تلاش بیشتر 💪")
-            except Exception:
-                st.error("لطفاً اعداد را با کاما وارد کنید.")
-    if tool.startswith("2."):
-        n1 = st.number_input("عدد اول:", value=0.0)
-        op = st.selectbox("عملیات:", ["+", "-", "*", "/", "^ (توان)", "sqrt (جذر)"])
-        n2 = st.number_input("عدد دوم:", value=0.0)
-        if st.button("محاسبه", key="m_btn"):
-            if op == "+": st.success(f"نتیجه: {n1 + n2}")
-            if op == "-": st.success(f"نتیجه: {n1 - n2}")
-            if op == "*": st.success(f"نتیجه: {n1 * n2}")
-            if op == "/" and n2 != 0: st.success(f"نتیجه: {n1 / n2}")
-            if op == "/" and n2 == 0: st.error("تقسیم بر صفر ممکن نیست!")
-            if op.startswith("^"): st.success(f"نتیجه: {n1 ** n2}")
-            if op.startswith("sqrt"): st.success(f"نتیجه: {math.sqrt(n1):.4f}" if n1 >= 0 else "عدد منفی مجاز نیست!")
-    if tool.startswith("3."):
-        ct = st.radio("تبدیل:", ["1. سانتی‌گراد به فارنهایت", "2. کیلومتر به مایل", "3. ساعت به دقیقه"])
-        v = st.number_input("مقدار:", value=1.0)
+        lvl_v = st.selectbox("سطح لغات را انتخاب کنید:", [
+            "Level 1: Beginner (مبتدی - ۸ لغت)",
+            "Level 2: Intermediate (متوسط - ۸ لغت)",
+            "Level 3: Advanced & Academic (پیشرفته و دانشگاهی - ۸ لغت)"
+        ])
+        if lvl_v.startswith("Level 1"):
+            st.markdown("| Word | معنی فارسی | Example |\n| :--- | :--- | :--- |\n| **Improve** | پیشرفت کردن | *I want to improve my English.* |\n| **Future** | آینده | *Education builds a bright future.* |\n| **Goal** | هدف | *My main goal is to study computer science.* |\n| **Practice** | تمرین کردن | *Practice makes you better every day.* |\n| **Support** | حمایت کردن | *We support each other in learning.* |\n| **Confident** | با اعتماد به نفس | *Speak English and feel confident.* |\n| **Skill** | مهارت | *Coding is a valuable modern skill.* |\n| **Success** | موفقیت | *Hard work leads to real success.* |")
+        if lvl_v.startswith("Level 2"):
