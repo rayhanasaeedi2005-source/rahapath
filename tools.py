@@ -24,7 +24,8 @@ def render_planner_and_solver(tab4, tab5, ask_ai_func):
             mq = st.text_area("Math/Physics Problem / سوال ریاضی:", height=80, key="mq5")
             if st.button("🧠 Solve / حل مسئله", key="bm5") and mq.strip() != "":
                 ma = ask_ai_func(f"Solve this math or physics problem step-by-step clearly in the same language: {mq}")
-                if ma != "": st.success(ma)
+                if ma != "":
+                    st.success(ma)
         if tl.startswith("2."):
             si = st.text_input("Scores / نمرات با کاما (85, 90, 95):", key="si5")
             if st.button("Calculate / محاسبه", key="bg5") and si.strip() != "":
@@ -53,4 +54,3 @@ def render_planner_and_solver(tab4, tab5, ask_ai_func):
                 if ct.startswith("1."): st.success(f"{(v * 9/5) + 32:.2f} °F")
                 if ct.startswith("2."): st.success(f"{v * 0.621371:.2f} miles")
                 if ct.startswith("3."): st.success(f"{v * 60:.0f} mins")
-
